@@ -1,4 +1,7 @@
 Rivision history for Perl extension HTML::ExtractContent.
 
+0.02 2008-10-11T05:57:43+0000
+     - Fixed Makefile.PL.
+     - Added README.
 0.01 2008-10-10T06:41:47+0000
      - original version

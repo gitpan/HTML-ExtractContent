@@ -9,6 +9,7 @@ requires 'List::Util';
 requires 'HTML::Entities';
 
 build_requires 'Test::More';
+build_requires 'File::Slurp';
 
 auto_include;
 WriteAll;
