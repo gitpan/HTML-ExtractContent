@@ -5,7 +5,7 @@ use HTML::ExtractContent::Util;
 use List::Util qw(reduce);
 use utf8;
 use base qw(Class::Accessor::Lvalue::Fast);
-our $VERSION = '0.02';
+our $VERSION = '0.03';
 __PACKAGE__->mk_accessors(qw(opt content));
 
 sub new {
@@ -76,13 +76,13 @@ sub extract {
     $factor = $continuous = 1.0;
     my $body = '';
     my $score = 0;
-    my @list = split $self->opt->{block_separator}, $self->content;
+    my $c = 0;
     my $best = {
         content => "",
         score => 0,
     };
+    my @list = split $self->opt->{block_separator}, $self->content;
     push @list, ""; # dummy
-    my $c = 0;
     for my $block (@list) {
         if ($c > $self->opt->{threshold}) {
             print "\n**", $score, "\n" if $self->opt->{debug};
@@ -96,6 +96,7 @@ sub extract {
             $score = $c;
             $continuous = $self->opt->{continuous_factor};
         }
+        $c = 0;
 
         $block = strip $block;
         next unless decode $block;
