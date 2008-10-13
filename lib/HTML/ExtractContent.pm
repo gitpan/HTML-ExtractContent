@@ -5,7 +5,7 @@ use HTML::ExtractContent::Util;
 use List::Util qw(reduce);
 use utf8;
 use base qw(Class::Accessor::Lvalue::Fast);
-our $VERSION = '0.03';
+our $VERSION = '0.04';
 __PACKAGE__->mk_accessors(qw(opt content));
 
 sub new {
@@ -76,28 +76,12 @@ sub extract {
     $factor = $continuous = 1.0;
     my $body = '';
     my $score = 0;
-    my $c = 0;
     my $best = {
         content => "",
         score => 0,
     };
     my @list = split $self->opt->{block_separator}, $self->content;
-    push @list, ""; # dummy
     for my $block (@list) {
-        if ($c > $self->opt->{threshold}) {
-            print "\n**", $score, "\n" if $self->opt->{debug};
-            if ($score > $best->{score}) {
-                $best = {
-                    content => $body,
-                    score => $score,
-                };
-            }
-            $body = $block . "\n";
-            $score = $c;
-            $continuous = $self->opt->{continuous_factor};
-        }
-        $c = 0;
-
         $block = strip $block;
         next unless decode $block;
         $continuous /= $self->opt->{continuous_factor} if length $body;
@@ -108,7 +92,7 @@ sub extract {
         next if $nolinklen < $self->opt->{min_length};
 
         # score
-        $c = $self->_score($nolink, $factor);
+        my $c = $self->_score($nolink, $factor);
         $factor *= $self->opt->{decay_factor};
 
         # anti-scoring factors
@@ -117,17 +101,41 @@ sub extract {
         $c *= ($self->opt->{no_body_factor} ** $no_body_rate);
         my $c1 = $c * $continuous;
 
-        print "---- $c*$continuous=$c1 $nolinklen\n$block\n"
-            if $self->opt->{debug};
-
         # cluster scoring
         if ($c1 > $self->opt->{threshold}) {
+            print "\n---- continue $c*$continuous=$c1 $nolinklen\n\n$block\n"
+                if $self->opt->{debug};
             $body .= $block . "\n";
             $score += $c1;
             $continuous = $self->opt->{continuous_factor};
+        } elsif ($c > $self->opt->{threshold}) {
+            print "\n---- end of cluster: $score\n" if $self->opt->{debug};
+            if ($score > $best->{score}) {
+                print "!!!! best: score=$score\n" if $self->opt->{debug};
+                $best = {
+                    content => $body,
+                    score => $score,
+                };
+            }
+            print "\n" if $self->opt->{debug};
+            $body = $block . "\n";
+            $score = $c;
+            $continuous = $self->opt->{continuous_factor};
+            print "\n---- continue $c*$continuous=$c1 $nolinklen\n\n$block\n"
+                if $self->opt->{debug};
+        } else {
+            print "\n>> reject $c*$continuous=$c1 $nolinklen\n$block\n",
+                "<< reject\n" if $self->opt->{debug};
         }
     }
-    print "\n**", $score, "\n" if $self->opt->{debug};
+    print "\n---- end of cluster: $score\n" if $self->opt->{debug};
+    if ($best->{score} < $score) {
+        print "!!!! best: score=$score\n" if $self->opt->{debug};
+        $best = {
+            content =>$body,
+            score => $score,
+        };
+    }
     $self->content = $best->{content};
 
     return $self;
