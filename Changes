@@ -1,5 +1,8 @@
 Rivision history for Perl extension HTML::ExtractContent.
 
+0.05 2008-10-24T09:34:46+0000
+     - Improved scoring algorithm.
+     - Fixed typo in the documentation.
 0.04 2008-10-13T08:53:29+0000
      - Fixed bug: some continued blocks were not detected.
      - Improved message readability in the debug mode.

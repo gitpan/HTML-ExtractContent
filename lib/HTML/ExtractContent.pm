@@ -5,20 +5,19 @@ use HTML::ExtractContent::Util;
 use List::Util qw(reduce);
 use utf8;
 use base qw(Class::Accessor::Lvalue::Fast);
-our $VERSION = '0.04';
+our $VERSION = '0.05';
 __PACKAGE__->mk_accessors(qw(opt content));
 
 sub new {
     my ($class, $opt) = @_;
     my $self = $class->SUPER::new($opt);
     $self->opt = {
-        threshold          => 50,   # threhold for score of clusters
+        threshold          => 60,   # threhold for score of clusters
         min_length         => 30,   # minimum length of blocks
         decay_factor       => 0.75, # decay factor for block scores
         no_body_factor     => 0.72,
         continuous_factor  => 1.62, # continuous factor for block scores
         punctuation_weight => 10,   # score weight for punctuations
-
         punctuations => qr/([。、．，！？]|\.[^A-Za-z0-9]|,[^0-9]|!|\?)/is,
         waste_expressions => qr/Copyright|All\s*Rights?\s*Reserved?/is,
             # characteristic keywords including footer
@@ -41,9 +40,10 @@ sub new {
         head     => qr/<head[^>]*>.*?<\/head\s*>/is,
         comment  => qr/<!--.*?-->/is,
         special  => qr/<![A-Za-z].*?>/is,
-        useless  => [ qr/<(script|style|select|noscript)[^>]*>.*?<\/\1\s*>/is,
-                      qr/<div\s[^>]*(id|class)\s*=\s*['"]?\S*(more|menu|side|navi)\S*["']?[^>]*>/is,
-                  ],
+        useless  => [
+            qr/<(script|style|select|noscript)[^>]*>.*?<\/\1\s*>/is,
+            qr/<div\s[^>]*(id|class)\s*=\s*['"]?\S*(more|menu|side|navi)\S*["']?[^>]*>/is,
+        ],
     };
     return bless $self, $class;
 }
@@ -81,6 +81,7 @@ sub extract {
         score => 0,
     };
     my @list = split $self->opt->{block_separator}, $self->content;
+    my $flag = 0;
     for my $block (@list) {
         $block = strip $block;
         next unless decode $block;
@@ -103,12 +104,14 @@ sub extract {
 
         # cluster scoring
         if ($c1 > $self->opt->{threshold}) {
+            $flag = 1;
             print "\n---- continue $c*$continuous=$c1 $nolinklen\n\n$block\n"
                 if $self->opt->{debug};
             $body .= $block . "\n";
             $score += $c1;
             $continuous = $self->opt->{continuous_factor};
         } elsif ($c > $self->opt->{threshold}) {
+            $flag = 1;
             print "\n---- end of cluster: $score\n" if $self->opt->{debug};
             if ($score > $best->{score}) {
                 print "!!!! best: score=$score\n" if $self->opt->{debug};
@@ -124,6 +127,7 @@ sub extract {
             print "\n---- continue $c*$continuous=$c1 $nolinklen\n\n$block\n"
                 if $self->opt->{debug};
         } else {
+            $factor /= $self->opt->{decay_factor} if !$flag;
             print "\n>> reject $c*$continuous=$c1 $nolinklen\n$block\n",
                 "<< reject\n" if $self->opt->{debug};
         }
@@ -163,7 +167,7 @@ sub _extract_title {
         if (length $title) {
             my $pat = $self->{pattern}->{headline};
             $self->content =~ s/$pat/
-                (index "$2", $title) >= 0 ? "<div>$2<\/div>" : "$1"/igse;
+                (index $title, strip(strip_tags($2))) >= 0 ? "<div>$2<\/div>" : "$1"/igse;
         }
     }
 }
@@ -280,17 +284,18 @@ Returns extracted content as an HTML text.
 Note that the returned text is neither fully tagged nor valid HTML.
 It doesn't contain tags such as <html> and it may have block tags that are
 not closed, or closed but not opened.
-This method is intended for the case that you need to analyze link tags in
+This method is intended for the case that you need to analyse link tags in
 the text for example.
 
 =back
 
 =head1 ACKNOWLEDGEMENT
 
-Hiromichi Kishi contributed toward development of this module
+Hiromichi Kishi contributed towards development of this module
 as a partner of pair programming.
 
-Implementation of this module is based on the Ruby module ExtractContent by Nakatani Shuyo.
+Implementation of this module is based on the Ruby module ExtractContent by
+Nakatani Shuyo.
 
 =head1 AUTHOR
 
@@ -304,7 +309,7 @@ Copyright (C) 2008 INA Lintaro / Hatena. All rights reserved.
 
 Copyright (c) 2007/2008 Nakatani Shuyo / Cybozu Labs Inc. All rights reserved. 
 
-=head1 LICENSE
+=head1 LICENCE
 
 This library is free software; you can redistribute it and/or modify it under
 the same terms as Perl itself.
