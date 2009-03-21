@@ -5,7 +5,7 @@ use HTML::ExtractContent::Util;
 use List::Util qw(reduce);
 use utf8;
 use base qw(Class::Accessor::Lvalue::Fast);
-our $VERSION = '0.05';
+our $VERSION = '0.06';
 __PACKAGE__->mk_accessors(qw(opt content));
 
 sub new {
@@ -31,16 +31,17 @@ sub new {
         debug => 0
     };
     $self->{pattern} = {
-        a        => qr/<a\s[^>]*>.*?<\/a\s*>/is,
-        href     => qr/<a\s+href\s*=\s*(['"]?)([^"'\s]+)\1/is,
-        list     => qr/(ul|dl|ol)(.+)<\/\1>/is,
-        li       => qr/(<li[^>]*>|<dd[^>]*>)/is,
-        title    => qr/<title[^>]*>(.*?)<\/title\s*>/is,
-        headline => qr/(<h\d\s*>\s*(.*?)\s*<\/h\d\s*>)/is,
-        head     => qr/<head[^>]*>.*?<\/head\s*>/is,
-        comment  => qr/<!--.*?-->/is,
-        special  => qr/<![A-Za-z].*?>/is,
-        useless  => [
+        a         => qr/<a\s[^>]*>.*?<\/a\s*>/is,
+        href      => qr/<a\s+href\s*=\s*(['"]?)([^"'\s]+)\1/is,
+        list      => qr/<(ul|dl|ol)(.+)<\/\1>/is,
+        innerlist => qr/<(ul|dl|ol)([^<]?\1[^>]*>?|[^<])+<\/\1>/is,
+        li        => qr/(<li[^>]*>|<dd[^>]*>)/is,
+        title     => qr/<title[^>]*>(.*?)<\/title\s*>/is,
+        headline  => qr/(<h\d\s*>\s*(.*?)\s*<\/h\d\s*>)/is,
+        head      => qr/<head[^>]*>.*?<\/head\s*>/is,
+        comment   => qr/<!--.*?-->/is,
+        special   => qr/<![A-Za-z].*?>/is,
+        useless   => [
             qr/<(script|style|select|noscript)[^>]*>.*?<\/\1\s*>/is,
             qr/<div\s[^>]*(id|class)\s*=\s*['"]?\S*(more|menu|side|navi)\S*["']?[^>]*>/is,
         ],
@@ -206,10 +207,11 @@ sub _eliminate_links {
 sub _is_linklist {
     my ($self, $block) = @_;
     my $listpat = $self->{pattern}->{list};
+    my $innerlistpat = $self->{pattern}->{innerlist};
     if ($block =~ $listpat) {
         my $list = $2;
         my $nolist = $block;
-        $nolist =~ s/$listpat//igs;
+        $nolist =~ s/$innerlistpat//igs;
         $nolist = to_text $nolist;
         my @listitems = split $self->{pattern}->{li}, $list;
         shift @listitems;

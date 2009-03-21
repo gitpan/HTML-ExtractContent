@@ -67,7 +67,7 @@ use vars qw( %EXPORT_TAGS @EXPORT_OK $VERSION @EXPORT ) ;
 @EXPORT = ( @{ $EXPORT_TAGS{'all'} } );
 @EXPORT_OK = qw( slurp ) ;
 
-$VERSION = '9999.13';
+$VERSION = '9999.12';
 
 *slurp = \&read_file ;
 
@@ -127,7 +127,6 @@ ERR
 # a regular file. set the sysopen mode
 
 		my $mode = O_RDONLY ;
-		$mode |= O_BINARY if $args{'binmode'} ;
 
 #printf "RD: BINARY %x MODE %x\n", O_BINARY, $mode ;
 
@@ -138,6 +137,8 @@ ERR
 			@_ = ( \%args, "read_file '$file_name' - sysopen: $!");
 			goto &_error ;
 		}
+
+		binmode($read_fh, $args{'binmode'}) if $args{'binmode'};
 
 # get the size of the file for use in the read loop
 
@@ -285,7 +286,6 @@ sub write_file {
 # set the mode for the sysopen
 
 		my $mode = O_WRONLY | O_CREAT ;
-		$mode |= O_BINARY if $args->{'binmode'} ;
 		$mode |= O_APPEND if $args->{'append'} ;
 		$mode |= O_EXCL if $args->{'no_clobber'} ;
 
@@ -298,6 +298,8 @@ sub write_file {
 			@_ = ( $args, "write_file '$file_name' - sysopen: $!");
 			goto &_error ;
 		}
+
+		binmode($write_fh, $args->{'binmode'}) if $args->{'binmode'};
 	}
 
 	sysseek( $write_fh, 0, SEEK_END ) if $args->{'append'} ;
@@ -459,4 +461,4 @@ sub _error {
 1;
 __END__
 
-#line 744
+#line 742
