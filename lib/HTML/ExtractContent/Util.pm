@@ -14,13 +14,13 @@ sub strip {
 
 sub strip_tags {
     my $page = shift;
-    $page =~ s/<[^>]+>//gs;
+    $page =~ s/<[^>\s]+(?:\s+[^>"]+(?:=(?:"[^"]*"|'[^']*'|\S+))?)*>//gs;
     return $page;
 }
 
 sub eliminate_tags {
     my ($page, $tag) = @_;
-    $page =~ s/<$tag\s*[^>]*>.*?<\/$tag\s*>//igs;
+    $page =~ s/<$tag[\s>].*?<\/$tag\s*>//igs;
     return $page;
 }
 

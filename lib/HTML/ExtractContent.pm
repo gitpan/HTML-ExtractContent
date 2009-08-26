@@ -5,7 +5,7 @@ use HTML::ExtractContent::Util;
 use List::Util qw(reduce);
 use utf8;
 use base qw(Class::Accessor::Lvalue::Fast);
-our $VERSION = '0.06';
+our $VERSION = '0.07';
 __PACKAGE__->mk_accessors(qw(opt content));
 
 sub new {
@@ -39,7 +39,7 @@ sub new {
         title     => qr/<title[^>]*>(.*?)<\/title\s*>/is,
         headline  => qr/(<h\d\s*>\s*(.*?)\s*<\/h\d\s*>)/is,
         head      => qr/<head[^>]*>.*?<\/head\s*>/is,
-        comment   => qr/<!--.*?-->/is,
+        comment   => qr/(?:<!--.*?-->|<([^>\s]+)[^>]*\s+style=['"]?[^>'"]*(?:display:\s*none|visibility:\s*hidden)[^>'"]*['"]?[^>]*>.*?<\/\1\s*>)/is,
         special   => qr/<![A-Za-z].*?>/is,
         useless   => [
             qr/<(script|style|select|noscript)[^>]*>.*?<\/\1\s*>/is,

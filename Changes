@@ -1,6 +1,8 @@
 Rivision history for Perl extension HTML::ExtractContent.
 
-0.05 2009-03-21T18:28:09+0000
+0.07 2009-08-26T06:32:53+0000
+     - Improved tag elimination.
+0.06 2009-03-21T18:28:09+0000
      - Fixed bug: link list detection was wrong
 0.05 2008-10-24T09:34:46+0000
      - Improved scoring algorithm.
