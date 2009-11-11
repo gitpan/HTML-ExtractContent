@@ -5,7 +5,7 @@ use HTML::ExtractContent::Util;
 use List::Util qw(reduce);
 use utf8;
 use base qw(Class::Accessor::Lvalue::Fast);
-our $VERSION = '0.07';
+our $VERSION = '0.08';
 __PACKAGE__->mk_accessors(qw(opt content));
 
 sub new {
@@ -18,7 +18,7 @@ sub new {
         no_body_factor     => 0.72,
         continuous_factor  => 1.62, # continuous factor for block scores
         punctuation_weight => 10,   # score weight for punctuations
-        punctuations => qr/([。、．，！？]|\.[^A-Za-z0-9]|,[^0-9]|!|\?)/is,
+        punctuations => qr/(?:[。、．，！？]|\.[^A-Za-z0-9]|,[^0-9]|!|\?)/is,
         waste_expressions => qr/Copyright|All\s*Rights?\s*Reserved?/is,
             # characteristic keywords including footer
         affiliate_expressions =>
@@ -32,10 +32,9 @@ sub new {
     };
     $self->{pattern} = {
         a         => qr/<a\s[^>]*>.*?<\/a\s*>/is,
-        href      => qr/<a\s+href\s*=\s*(['"]?)([^"'\s]+)\1/is,
+        href      => qr/<a\s+href\s*=\s*(['"]?)(?:[^"'\s]+)\1/is,
         list      => qr/<(ul|dl|ol)(.+)<\/\1>/is,
-        innerlist => qr/<(ul|dl|ol)([^<]?\1[^>]*>?|[^<])+<\/\1>/is,
-        li        => qr/(<li[^>]*>|<dd[^>]*>)/is,
+        li        => qr/(?:<li[^>]*>|<dd[^>]*>)/is,
         title     => qr/<title[^>]*>(.*?)<\/title\s*>/is,
         headline  => qr/(<h\d\s*>\s*(.*?)\s*<\/h\d\s*>)/is,
         head      => qr/<head[^>]*>.*?<\/head\s*>/is,
@@ -43,7 +42,7 @@ sub new {
         special   => qr/<![A-Za-z].*?>/is,
         useless   => [
             qr/<(script|style|select|noscript)[^>]*>.*?<\/\1\s*>/is,
-            qr/<div\s[^>]*(id|class)\s*=\s*['"]?\S*(more|menu|side|navi)\S*["']?[^>]*>/is,
+            qr/<div\s[^>]*(?:id|class)\s*=\s*['"]?\S*(?:more|menu|side|navi)\S*["']?[^>]*>/is,
         ],
     };
     return bless $self, $class;
@@ -207,12 +206,12 @@ sub _eliminate_links {
 sub _is_linklist {
     my ($self, $block) = @_;
     my $listpat = $self->{pattern}->{list};
-    my $innerlistpat = $self->{pattern}->{innerlist};
     if ($block =~ $listpat) {
         my $list = $2;
-        my $nolist = $block;
-        $nolist =~ s/$innerlistpat//igs;
-        $nolist = to_text $nolist;
+        my @fragments = split($listpat, $block, 2);
+        my $nolist = $list;
+        $nolist =~ s/$listpat//igs;
+        $nolist = to_text(join($nolist, @fragments));
         my @listitems = split $self->{pattern}->{li}, $list;
         shift @listitems;
         my $rate = 0;
